@@ -8,23 +8,37 @@ const router = express.Router();
 router.get("/twitter", (req, res, next) => {
   const state = uuidv4();
   req.session.state = state;
-  console.log("Initiating Twitter authentication with state:", state);
-
-  passport.authenticate("twitter", {
-    scope: ["tweet.read", "users.read", "offline.access"],
-    state: state,
-  })(req, res, next);
+  req.session.save((err) => {
+    if (err) {
+      console.error('Error saving session:', err);
+      return res.redirect(`${process.env.FRONTEND_URL}/auth-error?error=Session%20Save%20Error`);
+    }
+    console.log("Initiating Twitter authentication with state:", state);
+    console.log("Session ID:", req.sessionID);
+    passport.authenticate("twitter", {
+      scope: ["tweet.read", "users.read", "offline.access"],
+      state: state,
+    })(req, res, next);
+  });
 });
 
 router.get("/twitter/callback", (req, res, next) => {
   console.log('Twitter callback received');
+  console.log('Session ID:', req.sessionID);
+  console.log('Entire session object:', req.session);
   console.log('State in session:', req.session.state);
   console.log('State returned from Twitter:', req.query.state);
+
+  if (!req.session.state) {
+    console.error('Session state is undefined');
+    return res.redirect(`${process.env.FRONTEND_URL}/auth-error?error=Session%20State%20Missing`);
+  }
 
   if (req.session.state !== req.query.state) {
     console.error('State mismatch error.');
     return res.redirect(`${process.env.FRONTEND_URL}/auth-error?error=State%20mismatch`);
   }
+
   passport.authenticate("twitter", { session: false }, (err, user, info) => {
     if (err) {
       console.error("Twitter authentication error:", err);
@@ -60,6 +74,7 @@ router.get("/twitter/callback", (req, res, next) => {
       res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 3600000,
       });
       return res.redirect(process.env.FRONTEND_URL);

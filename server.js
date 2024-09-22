@@ -8,7 +8,7 @@ import { configurePassport } from './src/config/passport.js';
 import { authRoutes } from './src/routes/auth.js';
 import { apiRoutes } from './src/routes/api.js';
 import { errorHandler } from './src/utils/errorHandler.js';
-import { redisClient, redisStore } from './src/utils/redisUtils.js';
+import { sessionMiddleware } from './src/utils/redisUtils.js';
 
 
 dotenv.config();
@@ -32,18 +32,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(session({
-  store: redisStore,
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  }
-}));
+app.use(sessionMiddleware);
+
 
 app.use(cookieParser());
 app.use(passport.initialize());

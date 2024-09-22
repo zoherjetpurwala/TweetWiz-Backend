@@ -19,27 +19,48 @@ export const configurePassport = (passport) => {
     passReqToCallback: true,
     state: true
   }, 
-  (req, accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     console.log('Twitter authentication attempt', { accessToken, refreshToken, profile });
     
     if (!profile) {
       console.error('Twitter authentication failed: No profile returned');
       return done(null, false, { message: 'Twitter authentication failed' });
     }
-    
-    return done(null, profile);
+
+    try {
+      const user = {
+        id: profile.id,
+        name: profile.displayName,
+        username: profile.username,
+        image: profile.photos[0].value,
+        accessToken,
+        refreshToken
+      };
+
+      req.session.state = req.query.state;
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      return done(null, user);
+    } catch (error) {
+      console.error('Error in Twitter strategy verify function:', error);
+      return done(error);
+    }
   }));
 };
 
 export const generateToken = (user) => {
-  const { id, name, profile_image_url, username } = user._json;
   return jwt.sign(
     {
       user: {
-        id,
-        name,
-        username,
-        image: profile_image_url,
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        image: user.image,
       },
     },
     process.env.AUTH_SECRET,
