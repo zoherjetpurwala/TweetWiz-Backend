@@ -20,6 +20,9 @@ if (!process.env.SESSION_SECRET) {
 }
 
 // Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); 
+
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true,
@@ -30,20 +33,18 @@ app.use(cors({
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    httpOnly: true, // Add this line
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', 
+    maxAge: 24 * 60 * 60 * 1000 
   }
 }));
-
 
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Error handling middleware
-app.use(errorHandler);
 
 // Configure Passport
 configurePassport(passport);
@@ -52,6 +53,8 @@ configurePassport(passport);
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
+// Error handling middleware
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
