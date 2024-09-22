@@ -16,6 +16,7 @@
     "@auth/express": "^0.6.1",
     "@google/generative-ai": "^0.19.0",
     "@superfaceai/passport-twitter-oauth2": "^1.2.4",
+    "connect-redis": "^7.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -24,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.6",
     "passport": "^0.7.0",
+    "redis": "^4.7.0",
     "uuid": "^10.0.0"
   }
 }
