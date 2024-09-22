@@ -1,8 +1,6 @@
 import Redis from 'ioredis';
 import session from 'express-session';
-import connectRedis from 'connect-redis';
-
-const RedisStore = connectRedis(session);
+import RedisStore from 'connect-redis';
 
 const redisClient = new Redis(process.env.REDIS_URL, {
   maxRetriesPerRequest: null,
@@ -17,11 +15,16 @@ redisClient.on('connect', () => {
   console.log('Connected to Redis successfully');
 });
 
+const store = new RedisStore({
+  client: redisClient,
+  prefix: "myapp:",
+})
+
 const sessionMiddleware = session({
-  store: new RedisStore({ client: redisClient }),
+  store: store,
   secret: process.env.SESSION_SECRET,
-  resave: true,
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
