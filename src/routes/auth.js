@@ -42,4 +42,19 @@ router.get('/twitter/callback', (req, res, next) => {
     })(req, res, next);
   });
 
+
+  router.get('/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Logout failed' });
+      }
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax'
+      });
+      res.json({ message: 'Logged out successfully' });
+    });
+  });
+
 export const authRoutes = router;
