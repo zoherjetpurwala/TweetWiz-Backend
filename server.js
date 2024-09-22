@@ -8,8 +8,8 @@ import { configurePassport } from './src/config/passport.js';
 import { authRoutes } from './src/routes/auth.js';
 import { apiRoutes } from './src/routes/api.js';
 import { errorHandler } from './src/utils/errorHandler.js';
-import RedisStore from 'connect-redis';
-import redis from 'redis';
+import { redisClient, redisStore } from './src/utils/redisUtils.js';
+
 
 dotenv.config();
 
@@ -32,16 +32,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-const redisClient = redis.createClient({
-  url: process.env.REDIS_URL,
-  legacyMode: true, 
-});
-
-redisClient.connect().catch(console.error);
-
-
 app.use(session({
-  store: new RedisStore({ client: redisClient }),
+  store: redisStore,
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
