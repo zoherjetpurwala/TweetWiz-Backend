@@ -1,25 +1,26 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-const authenticateToken = (req, res, next) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ message: 'Not authenticated' });
-
-  jwt.verify(token, process.env.AUTH_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
-    req.user = user;
-    next();
-  });
+const ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  return res.status(401).json({ message: 'Not authenticated' });
 };
 
-router.get('/user', authenticateToken, (req, res) => {
-  res.json(req.user.user);
+router.get('/user', ensureAuthenticated, (req, res) => {
+  const userData = {
+    id: req.user.id,
+    name: req.user.name,
+    username: req.user.username,
+    image: req.user.image,
+  };
+  res.json(userData);
 });
 
-router.get('/generate-tweets', authenticateToken, async (req, res) => {
+router.get('/generate-tweets', ensureAuthenticated, async (req, res) => {
   try {
     const { prompt } = req.query;
     console.log("Prompt: ", prompt);
@@ -27,13 +28,10 @@ router.get('/generate-tweets', authenticateToken, async (req, res) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const tweetType = 'casual';
-    const aiPrompt = `Write me 5 tweets about ${prompt} in JSON format with id, tweet. A ${tweetType} tweet with some hashtags. End the tweet with our own tag #TweetWizAI.`;
+    const aiPrompt = `Write me 5 tweets about ${prompt} in JSON format with id, tweet. A casual tweet with some hashtags. End the tweet with our own tag #TweetWizAI.`;
 
     const result = await model.generateContent(aiPrompt);
-    const generatedContent = result.response.text();
-    console.log("GeneratedContent: ",generatedContent);
-    
+    const generatedContent = result.response.text(); // Make sure this is the correct method to extract text
 
     const cleanedContent = generatedContent
       .replace(/```json/g, '')
