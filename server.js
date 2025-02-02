@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import passport from "passport";
 import session from "express-session";
-import MemoryStore from "memorystore";
 import cookieParser from "cookie-parser";
 import { configurePassport } from "./src/config/passport.js";
 import { authRoutes } from "./src/routes/auth.js";
@@ -14,7 +13,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const MemoryStoreSession = MemoryStore(session);
 
 if (!process.env.SESSION_SECRET) {
   console.error("SESSION_SECRET is not set in the environment variables");
@@ -32,15 +30,16 @@ app.use(
 
 app.use(
   session({
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000,
-    }),
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "mysecret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
+      secure:
+        process.env.NODE_ENV === "production" &&
+        process.env.USE_HTTPS === "true",
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
